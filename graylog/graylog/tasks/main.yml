@@ -1,0 +1,127 @@
+---
+    - name: repos update
+      command: yum update -y
+    
+    - name: enable firewall
+      service: name=firewalld.service state=started
+      
+    - name: Install java
+      yum: name={{item}} state=installed update_cache=true
+      with_items:
+       - java-1.8.0-openjdk-headless.x86_64
+       - epel-release
+        
+    - name: create mongodb repo
+      copy:
+       src: /root/graylog/mongodbrepo
+       dest: /etc/yum.repos.d/mongodb-org-3.2.repo
+       
+    - name: Install Mongodb
+      yum: pkg=mongodb-org state=installed update_cache=true
+      
+    - name: chkconfig mongodb
+      command: chkconfig --add mongod
+      
+    - name: Daemon reload
+      command: systemctl daemon-reload
+
+    - name: enable service 
+      command: systemctl enable mongod.service     
+ 
+    - service: 
+       name: mongod.service 
+       state: restarted
+      
+    - name: import rpm for elasticsearch
+      command: rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+      
+    - name: create elasticsearch repo
+      copy:
+       src: /root/graylog/elasticsearch
+       dest: /etc/yum.repos.d/elasticsearch.repo
+   
+    - name: install elastic search
+      yum: pkg=elasticsearch state=installed update_cache=true
+      
+    - copy:
+       src: /root/graylog/elasticsearch.yml
+       dest: /etc/elasticsearch/elasticsearch.yml
+              
+    - name: chkconfig elasticsearch
+      command: chkconfig --add elasticsearch
+      
+    - name: Daemon reload1
+      command: systemctl daemon-reload
+
+    - service: 
+       name: elasticsearch.service
+       enabled: yes
+      
+    - service: 
+       name: elasticsearch.service 
+       state: restarted
+      
+    - name: touch
+      command: touch /tmp/flaggraylog
+ 
+    - name: rpm for graylog
+      yum:
+       name: https://packages.graylog2.org/repo/packages/graylog-2.4-repository_latest.rpm 
+       state: present          
+ 
+    - name: install graylog
+      yum: pkg=graylog-server state=installed update_cache=true
+      
+    - copy:
+       src: /root/graylog/server.conf
+       dest: /etc/graylog/server/server.conf
+    
+    - name: chkconfig graylog
+      command: chkconfig --add graylog-server
+      
+    - name: Daemon reload2
+      command: systemctl daemon-reload
+
+    - service: 
+       name: graylog-server.service
+       enabled: yes
+      
+    - service: 
+       name: graylog-server.service 
+       state: restarted
+    
+    - name: firewall setting
+      command: firewall-cmd --permanent --zone=public --add-port=9000/tcp
+      
+    - name: firewall setting2
+      command: firewall-cmd --permanent --zone=public --add-port=12900/tcp
+      
+    - name: firewall setting3
+      command: firewall-cmd --permanent --zone=public --add-port=1514/tcp
+      
+    - name: firewall reload
+      command: firewall-cmd --reload
+      
+    - name: install python
+      yum: pkg=policycoreutils-python state=installed update_cache=true
+      
+    - name: Selinux
+      command: setsebool -P httpd_can_network_connect 1
+    
+    - seport: 
+       ports: 27017
+       proto: tcp
+       setype: mongod_port_t
+       state: present
+    
+    - seport:
+       ports: 9200
+       proto: tcp
+       setype: http_port_t
+       state: present
+
+    - seport:
+       ports: 9000
+       proto: tcp
+       setype: http_port_t
+       state: present
