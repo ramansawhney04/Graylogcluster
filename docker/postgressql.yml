@@ -1,0 +1,15 @@
+---
+- name: Configure EC2 instance
+  hosts: ec2
+  connection: ssh
+  sudo_user: ubuntu
+  sudo: true
+  tasks:
+  - name: update ubuntu
+    command: sudo apt-get update
+  - name: Install postgres
+    command: sudo apt-get install postgresql postgresql-contrib -y
+#    apt: name={{ item }} state=present
+#    with_items:
+#    - postgresql
+#    - postgresql-contrib

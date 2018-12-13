@@ -1,0 +1,9 @@
+# Docker on ubuntu via ansible
+---
+- hosts: ec2
+  gather_facts: no
+  connection: ssh
+  sudo: yes
+  sudo_user: ubuntu
+  roles:
+  - docker-io
